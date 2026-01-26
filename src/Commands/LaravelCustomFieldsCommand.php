@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace CustomFields\LaravelCustomFields\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class LaravelCustomFieldsCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'laravel-custom-fields';
 
     public $description = 'My command';
 

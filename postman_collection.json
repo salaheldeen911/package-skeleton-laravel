@@ -1,0 +1,268 @@
+{
+    "info": {
+        "_postman_id": "cf-api-collection-id",
+        "name": "Laravel Custom Fields API",
+        "description": "API Documentation for management of Custom Fields (EAV) in Laravel.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Custom Fields",
+            "item": [
+                {
+                    "name": "List All Fields",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields?limit=15&search=&type=&model=&required=",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields"],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "15",
+                                    "description": "Number of results per page"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "",
+                                    "description": "Search by name"
+                                },
+                                {
+                                    "key": "type",
+                                    "value": "",
+                                    "description": "Filter by field type (text, number, select, etc.)"
+                                },
+                                {
+                                    "key": "model",
+                                    "value": "",
+                                    "description": "Filter by model class name"
+                                },
+                                {
+                                    "key": "required",
+                                    "value": "",
+                                    "description": "Filter by requirement (0 or 1)"
+                                },
+                                {
+                                    "key": "trashed",
+                                    "value": "",
+                                    "description": "Use 'only' to see deleted items"
+                                }
+                            ]
+                        },
+                        "description": "Fetch a paginated list of custom fields with optional filters."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Models and Allowed Types",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields/models-and-types",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields", "models-and-types"]
+                        },
+                        "description": "Returns a list of supported models from config and all available field types with their allowed validation rules."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Single Field",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields/:id",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields", ":id"],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Fetch details of a specific custom field."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Custom Field",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"phone_number\",\n    \"model\": \"App\\\\Models\\\\User\",\n    \"type\": \"text\",\n    \"placeholder\": \"Enter your phone\",\n    \"validation_rules\": {\n        \"required\": true,\n        \"min\": 10,\n        \"max\": 15\n    },\n    \"options\": []\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields"]
+                        },
+                        "description": "Create a new custom field for a specific model."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Custom Field",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"phone_number_updated\",\n    \"model\": \"App\\\\Models\\\\User\",\n    \"type\": \"text\",\n    \"placeholder\": \"Enter your phone number\",\n    \"validation_rules\": {\n        \"required\": false\n    }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields/:id",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields", ":id"],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Update an existing custom field."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Soft Delete Field",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields/:id",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields", ":id"],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Soft delete a custom field."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Restore Field",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields/:id/restore",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields", ":id", "restore"],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Restore a previously soft-deleted field."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Force Delete Field",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/custom-fields/:id/force",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "custom-fields", ":id", "force"],
+                            "variable": [
+                                {
+                                    "key": "id",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Permanently delete a custom field from the database."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [""]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [""]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000",
+            "type": "string"
+        }
+    ]
+}

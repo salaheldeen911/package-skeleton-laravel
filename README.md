@@ -1,93 +1,244 @@
-# :package_description
+# Laravel Custom Fields
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/:vendor_slug/:package_slug/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/:vendor_slug/:package_slug/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-<!--delete-->
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/salaheldeen911/laravel-custom-fields.svg?style=flat-square)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+[![Total Downloads](https://img.shields.io/packagist/dt/salaheldeen911/laravel-custom-fields.svg?style=flat-square)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+[![License](https://img.shields.io/packagist/l/salaheldeen911/laravel-custom-fields.svg?style=flat-square)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+
+**The Ultimate "Sealed Lifecycle" EAV Solution for Enterprise Laravel Applications.**
+
+Treat user-defined fields as first-class citizens. This package provides high-performance, strictly validated, and highly extensible custom fields with native support for both **Blade (Full-Stack)** and **Headless (API)** architectures.
+
 ---
-This repo can be used to scaffold a Laravel package. Follow these steps to get started:
 
-1. Press the "Use this template" button at the top of this repo to create a new repo with the contents of this skeleton.
-2. Run "php ./configure.php" to run a script that will replace all placeholders throughout all the files.
-3. Have fun creating your package.
-4. If you need help creating a package, consider picking up our <a href="https://laravelpackage.training">Laravel Package Training</a> video course.
+## 🔥 Key Differentiators
+
+- **🛡 Meta-Validation**: We don't just validate field values; we validate the _rules_ themselves. Ensure `min < max` and `regex` patterns are valid _before_ they are saved.
+- **⚡️ High-Performance Engine**: Optimized with database `upserts` and batch operations. Reduces database overhead from N queries to just **one** per request.
+- **🏗 Robust Polymorphism**: Uses a `config` map for models. High stability even if you refactor model class names/namespaces.
+- **🧩 Architecture Agnostic**:
+    - **Blade Version**: Ready-to-use Tailwind components for rapid development.
+    - **Headless Version**: Rich metadata API (`models-and-types`) for React/Vue/Mobile applications.
+
 ---
-<!--/delete-->
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
 
-## Support us
-
-[<img src="https://github-ads.s3.eu-central-1.amazonaws.com/:package_name.jpg?t=1" width="419px" />](https://spatie.be/github-ad-click/:package_name)
-
-We invest a lot of resources into creating [best in class open source packages](https://spatie.be/open-source). You can support us by [buying one of our paid products](https://spatie.be/open-source/support-us).
-
-We highly appreciate you sending us a postcard from your hometown, mentioning which of our package(s) you are using. You'll find our address on [our contact page](https://spatie.be/about-us). We publish all received postcards on [our virtual postcard wall](https://spatie.be/open-source/postcards).
-
-## Installation
-
-You can install the package via composer:
+## 📦 Installation
 
 ```bash
-composer require :vendor_slug/:package_slug
+composer require salaheldeen911/laravel-custom-fields
 ```
 
-You can publish and run the migrations with:
+**Installer**: Publishes config, migrations, and assets.
 
 ```bash
-php artisan vendor:publish --tag=":package_slug-migrations"
-php artisan migrate
+php artisan custom-fields:install
 ```
 
-You can publish the config file with:
+---
 
-```bash
-php artisan vendor:publish --tag=":package_slug-config"
+## ⚙️ Configuration
+
+1. **Map Your Models**: In `config/custom-fields.php`, define aliases for your models to maintain database stability.
+
+    ```php
+    'models' => [
+        'user'    => \App\Models\User::class,
+        'product' => \App\Models\Product::class,
+    ],
+    ```
+
+2. **Prepare Models**: Add the `HasCustomFields` trait to any model that should support custom fields.
+
+    ```php
+    use CustomFields\LaravelCustomFields\Traits\HasCustomFields;
+
+    class User extends Model {
+        use HasCustomFields;
+    }
+    ```
+
+---
+
+## 🏛 Usage: Blade Version (Full-Stack)
+
+### 1. Rendering Inputs
+
+Use the provided `<x-custom-fields::render>` component to automatically generate the correct input type (text, number, select, etc.) with its specific validation rules and options.
+
+```blade
+<form action="{{ route('users.store') }}" method="POST">
+    @csrf
+
+    <!-- Standard Fields -->
+    <input type="text" name="name" value="{{ old('name') }}" />
+
+    <!-- Dynamic Custom Fields -->
+    @foreach(\App\Models\User::customFields() as $field)
+        <x-custom-fields::render :field="$field" :value="old($field->name.'.value')" />
+    @endforeach
+
+    <button type="submit">Save</button>
+</form>
 ```
 
-This is the contents of the published config file:
+### 2. Validation & Storing
+
+In your controller, you can use the trait's methods to handle validation and storage seamlessly.
 
 ```php
-return [
-];
+public function store(Request $request)
+{
+    // 1. Standard Validation
+    $request->validate(['name' => 'required']);
+
+    // 2. Custom Fields Validation
+    $validator = User::customFieldsValidation($request);
+    if ($validator->fails()) {
+        return back()->withErrors($validator)->withInput();
+    }
+
+    // 3. Create Model
+    $user = User::create($request->only('name'));
+
+    // 4. Save Custom Fields (Optimized Batch Insert)
+    $user->saveCustomFields($request->all());
+
+    return redirect()->route('users.index');
+}
 ```
 
-Optionally, you can publish the views using
+### 3. Updating Values
 
-```bash
-php artisan vendor:publish --tag=":package_slug-views"
-```
-
-## Usage
+Updating is just as easy and uses high-performance `upsert` logic.
 
 ```php
-$variable = new VendorName\Skeleton();
-echo $variable->echoPhrase('Hello, VendorName!');
+public function update(Request $request, User $user)
+{
+    // Validate
+    $validator = User::customFieldsValidation($request);
+    if ($validator->fails()) return back()->withErrors($validator)->withInput();
+
+    // Update Main Model
+    $user->update($request->only('name'));
+
+    // Update Custom Fields
+    $user->updateCustomFields($request->all());
+
+    return back();
+}
 ```
 
-## Testing
+---
 
-```bash
-composer test
+## 🏛 Usage: Headless Version (API)
+
+### 1. Fetching Specifications
+
+Call `GET /api/custom-fields/models-and-types` to get the list of supported models and the metadata for each field type (including allowed validation rules).
+
+### 2. Submitting Data
+
+The package expects custom field data in a specific format to ensure ID tracking and performance:
+
+```json
+{
+    "name": "John Doe",
+    "biography": {
+        "custom_field_id": 1,
+        "value": "Author and developer."
+    },
+    "age": {
+        "custom_field_id": 2,
+        "value": 30
+    }
+}
 ```
 
-## Changelog
+---
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+## 🔍 Retrieval & Querying
 
-## Contributing
+### Get Single Value
 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+```php
+$bio = $user->custom('biography');
+```
 
-## Security Vulnerabilities
+### Get All Values (Flat Array)
 
-Please review [our security policy](../../security/policy) on how to report security vulnerabilities.
+Useful for API responses via `JsonResource`.
 
-## Credits
+```php
+return response()->json([
+    'data' => $user,
+    'custom_fields' => $user->customFieldsResponse()
+]);
+// Output: {"biography": "...", "age": 30}
+```
 
-- [:author_name](https://github.com/:author_username)
-- [All Contributors](../../contributors)
+### Querying by Custom Field
 
-## License
+Find users where a custom field matches a value.
+
+```php
+$users = User::whereCustomField('city', 'New York')->get();
+```
+
+---
+
+## 🛠 Advanced Features
+
+### Supported Field Types
+
+- `text`: Standard text input.
+- `number`: Numeric input with `min`/`max` support.
+- `phone`: Specialized phone validation.
+- `select`: Dropdown with configurable options.
+- `checkbox`: Boolean or multiple choice.
+
+### Meta-Validation
+
+The package ensures that when you _create_ a custom field, its configuration is valid:
+
+- **Regex Safety**: Validates that the regex pattern is a valid PHP regex.
+- **Range Safety**: Automatically ensures `min` cannot be greater than `max`.
+- **Constraint Safety**: Only allows validation rules that make sense for the field type (e.g., `max` length for text, `min` value for numbers).
+
+---
+
+## 🔌 Extending the Core
+
+### New Field Type
+
+Register a new field type by extending `FieldType`:
+
+```php
+namespace App\CustomFields;
+
+use CustomFields\LaravelCustomFields\FieldTypes\FieldType;
+
+class ColorPickerType extends FieldType {
+    public function name(): string { return 'color'; }
+    public function baseRule(): string { return 'string|size:7'; }
+    public function allowedRules(): array { return ['required' => 'boolean']; }
+    public function view(): string { return 'components.color-picker'; }
+}
+```
+
+### New Validation Rule
+
+Extend `ValidationRule` to add logic like `UniqueVatNumber` or specialized formatting.
+
+---
+
+## 🎨 Management UI
+
+The package comes with a built-in UI to manage your custom fields.
+
+- **Route**: `/custom-fields` (configurable in `config/custom-fields.php`)
+- **Features**: List, Create, Edit, Soft Delete, and Restore custom fields.
+
+---
+
+## 📄 License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
