@@ -5,13 +5,20 @@ namespace Salah\LaravelCustomFields;
 use Salah\LaravelCustomFields\Commands\InstallCommand;
 use Salah\LaravelCustomFields\Commands\LaravelCustomFieldsCommand;
 use Salah\LaravelCustomFields\FieldTypes\CheckboxField;
+use Salah\LaravelCustomFields\FieldTypes\ColorField;
 use Salah\LaravelCustomFields\FieldTypes\DateField;
+use Salah\LaravelCustomFields\FieldTypes\DecimalField;
 use Salah\LaravelCustomFields\FieldTypes\EmailField;
 use Salah\LaravelCustomFields\FieldTypes\NumberField;
 use Salah\LaravelCustomFields\FieldTypes\PhoneField;
 use Salah\LaravelCustomFields\FieldTypes\SelectField;
+use Salah\LaravelCustomFields\FieldTypes\TextAreaField;
 use Salah\LaravelCustomFields\FieldTypes\TextField;
+use Salah\LaravelCustomFields\FieldTypes\TimeField;
 use Salah\LaravelCustomFields\FieldTypes\UrlField;
+use Salah\LaravelCustomFields\Repositories\CustomFieldRepository;
+use Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface;
+use Salah\LaravelCustomFields\Services\CustomFieldsService;
 use Salah\LaravelCustomFields\ValidationRules\AfterDateRule;
 use Salah\LaravelCustomFields\ValidationRules\AfterOrEqualDateRule;
 use Salah\LaravelCustomFields\ValidationRules\AlphaDashRule;
@@ -55,13 +62,17 @@ class LaravelCustomFieldsServiceProvider extends PackageServiceProvider
         $this->app->singleton(FieldTypeRegistry::class, function () {
             $registry = new FieldTypeRegistry;
             $registry->register(new TextField);
+            $registry->register(new TextAreaField);
             $registry->register(new DateField);
+            $registry->register(new TimeField);
             $registry->register(new SelectField);
             $registry->register(new CheckboxField);
             $registry->register(new NumberField);
+            $registry->register(new DecimalField);
             $registry->register(new PhoneField);
             $registry->register(new EmailField);
             $registry->register(new UrlField);
+            $registry->register(new ColorField);
 
             return $registry;
         });
@@ -85,15 +96,15 @@ class LaravelCustomFieldsServiceProvider extends PackageServiceProvider
             return $registry;
         });
 
-        $this->app->singleton(\Salah\LaravelCustomFields\Services\CustomFieldsService::class, function ($app) {
-            return new \Salah\LaravelCustomFields\Services\CustomFieldsService(
-                $app->make(\Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface::class)
+        $this->app->singleton(CustomFieldsService::class, function ($app) {
+            return new CustomFieldsService(
+                $app->make(CustomFieldRepositoryInterface::class)
             );
         });
 
         $this->app->bind(
-            \Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface::class,
-            \Salah\LaravelCustomFields\Repositories\CustomFieldRepository::class
+            CustomFieldRepositoryInterface::class,
+            CustomFieldRepository::class
         );
     }
 

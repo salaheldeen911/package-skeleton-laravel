@@ -2,19 +2,20 @@
 
 namespace Salah\LaravelCustomFields\FieldTypes;
 
+use Salah\LaravelCustomFields\ValidationRules\FieldValidationRule;
 use Salah\LaravelCustomFields\ValidationRules\MaxRule;
 use Salah\LaravelCustomFields\ValidationRules\MinRule;
 
-class NumberField extends FieldType
+class DecimalField extends FieldType
 {
     public function name(): string
     {
-        return 'number';
+        return 'decimal';
     }
 
     public function label(): string
     {
-        return 'Number Field';
+        return 'Decimal Number';
     }
 
     public function htmlTag(): string
@@ -29,7 +30,7 @@ class NumberField extends FieldType
 
     public function description(): string
     {
-        return 'A field for entering numeric values.';
+        return 'A numeric input that supports decimal values.';
     }
 
     public function baseRule(): array
@@ -40,13 +41,13 @@ class NumberField extends FieldType
     public function allowedRules(): array
     {
         return [
-            MinRule::class,
-            MaxRule::class,
+            new FieldValidationRule(new MinRule, ['numeric']),
+            new FieldValidationRule(new MaxRule, ['numeric']),
         ];
     }
 
     public function view(): string
     {
-        return 'custom-fields::components.types.number';
+        return 'custom-fields::components.types.decimal';
     }
 }

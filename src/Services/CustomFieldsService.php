@@ -31,6 +31,8 @@ class CustomFieldsService
             $rules[$customField->slug] = $this->getValueRule($customField);
         }
 
+        dd($rules);
+
         return $rules;
     }
 

@@ -2,19 +2,16 @@
 
 namespace Salah\LaravelCustomFields\FieldTypes;
 
-use Salah\LaravelCustomFields\ValidationRules\MaxRule;
-use Salah\LaravelCustomFields\ValidationRules\MinRule;
-
-class NumberField extends FieldType
+class ColorField extends FieldType
 {
     public function name(): string
     {
-        return 'number';
+        return 'color';
     }
 
     public function label(): string
     {
-        return 'Number Field';
+        return 'Color Picker';
     }
 
     public function htmlTag(): string
@@ -24,29 +21,26 @@ class NumberField extends FieldType
 
     public function htmlType(): string
     {
-        return 'number';
+        return 'color';
     }
 
     public function description(): string
     {
-        return 'A field for entering numeric values.';
+        return 'A color selection input.';
     }
 
     public function baseRule(): array
     {
-        return ['numeric'];
+        return ['string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'];
     }
 
     public function allowedRules(): array
     {
-        return [
-            MinRule::class,
-            MaxRule::class,
-        ];
+        return [];
     }
 
     public function view(): string
     {
-        return 'custom-fields::components.types.number';
+        return 'custom-fields::components.types.color';
     }
 }
