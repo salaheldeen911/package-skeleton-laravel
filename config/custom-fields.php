@@ -17,4 +17,11 @@ return [
             'middleware' => ['web'],
         ],
     ],
+
+    /**
+     * Integrity Check (Sealed Lifecycle)
+     * If enabled, the package will throw an exception if you attempt to save
+     * custom fields that haven't passed through the service's validation.
+     */
+    'strict_validation' => true,
 ];

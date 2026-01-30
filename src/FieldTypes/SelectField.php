@@ -2,8 +2,6 @@
 
 namespace Salah\LaravelCustomFields\FieldTypes;
 
-use Salah\LaravelCustomFields\ValidationRules\ValidationRule;
-
 class SelectField extends FieldType
 {
     public function name(): string

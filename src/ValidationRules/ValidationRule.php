@@ -21,7 +21,7 @@ abstract class ValidationRule implements ConfigurableElement
      */
     public function htmlTag(): string
     {
-        return 'input';
+        return 'checkbox';
     }
 
     /**
@@ -29,7 +29,7 @@ abstract class ValidationRule implements ConfigurableElement
      */
     public function htmlType(): string
     {
-        return 'text';
+        return '';
     }
 
     /**
@@ -43,10 +43,7 @@ abstract class ValidationRule implements ConfigurableElement
     /**
      * A description of what this rule does, for the UI.
      */
-    public function description(): string
-    {
-        return '';
-    }
+    abstract public function description(): string;
 
     /**
      * Optional predefined values for the rule configuration.
@@ -62,6 +59,15 @@ abstract class ValidationRule implements ConfigurableElement
     public function baseRule(): array
     {
         return ['string'];
+    }
+
+    /**
+     * Optional default configuration value for this rule.
+     * If this returns non-null, the rule will be applied even if not present in the DB.
+     */
+    public function defaultConfigValue(): mixed
+    {
+        return null;
     }
 
     /**

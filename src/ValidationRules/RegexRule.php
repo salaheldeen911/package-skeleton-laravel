@@ -23,6 +23,11 @@ class RegexRule extends ValidationRule
         }];
     }
 
+    public function htmlTag(): string
+    {
+        return 'input';
+    }
+
     public function placeholder(): string
     {
         return '^[a-zA-Z]+$';

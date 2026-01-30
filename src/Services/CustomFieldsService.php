@@ -2,20 +2,29 @@
 
 namespace Salah\LaravelCustomFields\Services;
 
-use Salah\LaravelCustomFields\Models\CustomField;
-use Salah\LaravelCustomFields\Models\CustomFieldValue;
-use Salah\LaravelCustomFields\ValidationRuleRegistry;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Validator as ValidationValidator;
+use Salah\LaravelCustomFields\Exceptions\ValidationIntegrityException;
+use Salah\LaravelCustomFields\Models\CustomField;
+use Salah\LaravelCustomFields\Models\CustomFieldValue;
+use Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface;
+use Salah\LaravelCustomFields\ValidationRuleRegistry;
 
 class CustomFieldsService
 {
+    protected array $validatedHashes = [];
+
+    public function __construct(
+        protected CustomFieldRepositoryInterface $repository
+    ) {}
+
     /**
      * Get rules for custom fields associated with the model.
      */
     public function getValidationRules(string $modelClass): array
     {
-        $customFields = CustomField::where('model', $modelClass)->get();
+        $customFields = $this->repository->getByModel($modelClass);
         $rules = [];
 
         foreach ($customFields as $customField) {
@@ -27,31 +36,63 @@ class CustomFieldsService
 
     /**
      * Validate the request data for custom fields.
-     *
-     * @return \Illuminate\Validation\Validator
      */
-    public function validate(string $modelClass, array $data)
+    public function validate(string $modelClass, array $data): ValidationValidator
     {
         $rules = $this->getValidationRules($modelClass);
+        $validator = Validator::make($data, $rules);
 
-        return Validator::make($data, $rules);
+        $validator->after(function ($validator) {
+            if (! $validator->errors()->any()) {
+                $this->markAsValidated($validator->validated());
+            }
+        });
+
+        return $validator;
+    }
+
+    /**
+     * Mark a data set as successfully validated.
+     */
+    public function markAsValidated(array $data): void
+    {
+        $hash = $this->generateDataHash($data);
+        $this->validatedHashes[$hash] = true;
+    }
+
+    /**
+     * Check if the data set has been validated.
+     */
+    public function isValidated(array $data): bool
+    {
+        return isset($this->validatedHashes[$this->generateDataHash($data)]);
+    }
+
+    /**
+     * Generate a stable hash for the data set.
+     */
+    protected function generateDataHash(array $data): string
+    {
+        // Filter the data to only include keys that match custom field slugs for this model
+        // Actually, just sorting and hashing the whole array is fine as long as it's consistent.
+        ksort($data);
+
+        return md5(json_encode($data));
     }
 
     /**
      * Store custom field values for a model instance.
-     *
-     * @return void
      */
-    public function storeValues(Model $model, array $validatedData)
+    public function storeValues(Model $model, array $data): void
     {
+        $this->ensureDataIsValidated($data);
+
         $modelAlias = $model::getCustomFieldModelAlias();
-        $customFields = CustomField::where('model', $modelAlias)
-            ->whereIn('slug', array_keys($validatedData))
-            ->get()
+        $customFields = $this->repository->getByModelAndSlugs($modelAlias, array_keys($data))
             ->keyBy('slug');
 
         $values = [];
-        foreach ($validatedData as $fieldSlug => $value) {
+        foreach ($data as $fieldSlug => $value) {
             $customField = $customFields->get($fieldSlug);
 
             if (! $customField) {
@@ -75,19 +116,17 @@ class CustomFieldsService
 
     /**
      * Update custom field values for a model instance.
-     *
-     * @return void
      */
-    public function updateValues(Model $model, array $validatedData)
+    public function updateValues(Model $model, array $data): void
     {
+        $this->ensureDataIsValidated($data);
+
         $modelAlias = $model::getCustomFieldModelAlias();
-        $customFields = CustomField::where('model', $modelAlias)
-            ->whereIn('slug', array_keys($validatedData))
-            ->get()
+        $customFields = $this->repository->getByModelAndSlugs($modelAlias, array_keys($data))
             ->keyBy('slug');
 
         $values = [];
-        foreach ($validatedData as $fieldSlug => $value) {
+        foreach ($data as $fieldSlug => $value) {
             $customField = $customFields->get($fieldSlug);
 
             if (! $customField) {
@@ -112,6 +151,20 @@ class CustomFieldsService
         }
     }
 
+    /**
+     * Ensure the data has been validated before processing.
+     */
+    protected function ensureDataIsValidated(array $data): void
+    {
+        if (! config('custom-fields.strict_validation', true)) {
+            return;
+        }
+
+        if (! $this->isValidated($data)) {
+            throw ValidationIntegrityException::unvalidatedData();
+        }
+    }
+
     public function getValidationRuleDetails(): array
     {
         $registry = app(ValidationRuleRegistry::class);
@@ -119,7 +172,7 @@ class CustomFieldsService
 
         foreach ($registry->all() as $rule) {
             $baseRule = $rule->baseRule();
-            $serializableRules = array_values(array_filter($baseRule, fn($r) => !($r instanceof \Closure)));
+            $serializableRules = array_values(array_filter($baseRule, fn ($r) => ! ($r instanceof \Closure)));
 
             $details[$rule->name()] = [
                 'rule' => $serializableRules,
@@ -136,7 +189,9 @@ class CustomFieldsService
     {
         $handler = $customField->handler();
 
-        if (! $handler) return ['string'];
+        if (! $handler) {
+            return ['string'];
+        }
 
         $rules = [
             $this->getRequirementRule($customField),
@@ -168,27 +223,37 @@ class CustomFieldsService
 
     private function getCustomRules(CustomField $customField): array
     {
-        if (empty($customField->validation_rules)) {
+        $handler = $customField->handler();
+
+        if (! $handler) {
             return [];
         }
 
-        $registry = app(ValidationRuleRegistry::class);
+        $allowedRules = $handler->allowedRules();
+        $storedRules = $customField->validation_rules ?: [];
         $rules = [];
 
-        foreach ($customField->validation_rules as $ruleName => $value) {
-            $ruleObj = $registry->get($ruleName);
-            
-            if (! $ruleObj) {
+        foreach ($allowedRules as $ruleObj) {
+            $ruleName = $ruleObj->name();
+
+            // Use stored value if exists, otherwise check for a default value defined in the rule class
+            $value = array_key_exists($ruleName, $storedRules)
+                ? $storedRules[$ruleName]
+                : $ruleObj->defaultConfigValue();
+
+            if (is_null($value)) {
                 continue;
             }
 
             $baseRule = $ruleObj->baseRule();
-            
-            if (in_array('boolean', $baseRule)) {
-                if (! $value) {
-                    continue;
-                }
-            } elseif (is_null($value) || $value === '') {
+
+            // For boolean rules, skip if false/null (unless it's a default that explicitly wants to run)
+            if (in_array('boolean', $baseRule) && ! $value) {
+                continue;
+            }
+
+            // For value-based rules, skip if empty string (unless it's a default that handles empty)
+            if (! in_array('boolean', $baseRule) && $value === '' && is_null($ruleObj->defaultConfigValue())) {
                 continue;
             }
 

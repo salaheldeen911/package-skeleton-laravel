@@ -16,7 +16,7 @@ class ElementMeta
     public function toArray(): array
     {
         $rules = $this->baseRules ?: $this->element->baseRule();
-        $serializableRules = array_values(array_filter($rules, fn($r) => !($r instanceof \Closure)));
+        $serializableRules = array_values(array_filter($rules, fn ($r) => ! ($r instanceof \Closure)));
 
         return array_merge([
             'name' => $this->element->name(),

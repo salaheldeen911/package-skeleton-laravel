@@ -2,28 +2,44 @@
 
 namespace Salah\LaravelCustomFields\Traits;
 
-use Salah\LaravelCustomFields\Models\CustomField;
-use Salah\LaravelCustomFields\Models\CustomFieldValue;
-use Salah\LaravelCustomFields\Services\CustomFieldsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Salah\LaravelCustomFields\Models\CustomField;
+use Salah\LaravelCustomFields\Models\CustomFieldValue;
+use Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface;
+use Salah\LaravelCustomFields\Services\CustomFieldsService;
 
 trait HasCustomFields
 {
-    public static function getCustomFieldModelAlias(): bool|int|string
-    {
-        $alias = array_search(self::class, config('custom-fields.models'));
+    protected static array $modelAliasCache = [];
 
-        return $alias !== false ? $alias : self::class;
+    public static function getCustomFieldModelAlias(): string
+    {
+        if (isset(static::$modelAliasCache[static::class])) {
+            return static::$modelAliasCache[static::class];
+        }
+
+        $alias = array_search(static::class, config('custom-fields.models', []));
+
+        return static::$modelAliasCache[static::class] = ($alias !== false ? $alias : static::class);
     }
 
     public static function customFields(): mixed
     {
-        $modelKey = self::getCustomFieldModelAlias();
+        $modelAlias = static::getCustomFieldModelAlias();
 
-        return Cache::rememberForever('custom_fields_'.$modelKey, function () use ($modelKey) {
-            return CustomField::where('model', $modelKey)->get();
+        return Cache::rememberForever('custom_fields_'.$modelAlias, function () use ($modelAlias) {
+            return app(CustomFieldRepositoryInterface::class)
+                ->getByModel($modelAlias);
         });
+    }
+
+    /**
+     * Get only the rules array for integration with FormRequests.
+     */
+    public static function getCustomFieldRules(): array
+    {
+        return app(CustomFieldsService::class)->getValidationRules(static::getCustomFieldModelAlias());
     }
 
     public static function customFieldsValidation(Request $request)
@@ -31,36 +47,21 @@ trait HasCustomFields
         // For Backward Compatibility, we keep this signature but use the service.
         $service = app(CustomFieldsService::class);
 
-        return $service->validate(self::getCustomFieldModelAlias(), $request->all());
+        return $service->validate(static::getCustomFieldModelAlias(), $request->all());
     }
 
     public function saveCustomFields(array $data): void
     {
         $service = app(CustomFieldsService::class);
-        // We assume $data is already validated or contains the correct specific structure keys
         $service->storeValues($this, $data);
-        // Also refresh relations?
-        $this->load('customFieldsValues');
+        $this->unsetRelation('customFieldsValues');
     }
 
     public function updateCustomFields(array $data)
     {
         $service = app(CustomFieldsService::class);
         $service->updateValues($this, $data);
-        $this->load('customFieldsValues');
-    }
-
-    public static function storeCustomFieldValue($validation, $model)
-    {
-        // Wrapper for backward compatibility or cleaner use if validator is passed
-        $service = app(CustomFieldsService::class);
-        $service->storeValues($model, $validation->validated());
-    }
-
-    public static function updateCustomFieldValue($validation, $model)
-    {
-        $service = app(CustomFieldsService::class);
-        $service->updateValues($model, $validation->validated());
+        $this->unsetRelation('customFieldsValues');
     }
 
     public function customFieldsValues()
@@ -69,22 +70,36 @@ trait HasCustomFields
     }
 
     /**
+     * Scope to eager load custom field values correctly.
+     */
+    public function scopeWithCustomFields($query)
+    {
+        return $query->with(['customFieldsValues' => function ($q) {
+            $q->with('customField');
+        }]);
+    }
+
+    /**
      * Get all custom fields as a flat key-value array for API responses.
      */
     public function customFieldsResponse(): array
     {
-        return $this->customFieldsValues->mapWithKeys(function ($item) {
-            return [$item->customField->slug => $item->value];
-        })->toArray();
+        // Filter out values belonging to soft-deleted custom fields to prevent crashes
+        return $this->customFieldsValues
+            ->filter(fn ($item) => $item->customField !== null)
+            ->keyBy('customField.slug')
+            ->map->value
+            ->toArray();
     }
 
     public function custom(string $fieldName)
     {
-        $field = $this->customFieldsValues->sortByDesc('created_at')->first(function ($item) use ($fieldName) {
-            return $item->customField->slug === $fieldName;
+        // Check if relation is loaded and ensure customField exists
+        $fieldValue = $this->customFieldsValues->first(function ($item) use ($fieldName) {
+            return $item->customField && $item->customField->slug === $fieldName;
         });
 
-        return $field ? $field->value : null;
+        return $fieldValue ? $fieldValue->value : null;
     }
 
     public function scopeWhereCustomField($query, string $fieldName, $value)

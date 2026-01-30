@@ -41,8 +41,8 @@ class NumberField extends FieldType
     public function allowedRules(): array
     {
         return [
-            new FieldValidationRule(new MinRule(), ['numeric', 'min:0']),
-            new FieldValidationRule(new MaxRule(), ['numeric', 'min:0']),
+            new FieldValidationRule(new MinRule, ['numeric', 'min:0']),
+            new FieldValidationRule(new MaxRule, ['numeric', 'min:0']),
         ];
     }
 

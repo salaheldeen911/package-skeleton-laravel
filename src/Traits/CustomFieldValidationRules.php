@@ -2,8 +2,8 @@
 
 namespace Salah\LaravelCustomFields\Traits;
 
-use Salah\LaravelCustomFields\FieldTypeRegistry;
 use Illuminate\Validation\Rule;
+use Salah\LaravelCustomFields\FieldTypeRegistry;
 
 trait CustomFieldValidationRules
 {
@@ -14,8 +14,10 @@ trait CustomFieldValidationRules
     protected function prepareRulesForStorage(array $rules, string $type): array
     {
         $handler = app(FieldTypeRegistry::class)->get($type);
-        
-        if (! $handler) return $rules;
+
+        if (! $handler) {
+            return $rules;
+        }
 
         $allowedRules = $handler->allowedRules();
         $rulesMap = [];
@@ -34,12 +36,13 @@ trait CustomFieldValidationRules
 
             $ruleObj = $rulesMap[$ruleName];
             $baseRule = $ruleObj->baseRule();
-            
+
             // For toggle/boolean rules (like alpha, email)
             if (in_array('boolean', $baseRule)) {
                 if (filter_var($value, FILTER_VALIDATE_BOOLEAN)) {
-                    $normalizedRules[$ruleName] = "1";
+                    $normalizedRules[$ruleName] = '1';
                 }
+
                 continue;
             }
 
@@ -65,7 +68,15 @@ trait CustomFieldValidationRules
                 'string',
                 'max:255',
                 'regex:/^[\p{L}\p{N}\s]+$/u',
+                // Unique name per model
                 Rule::unique('custom_fields', 'name')->where(fn ($q) => $q->where('model', $this->model))->ignore($customFieldId),
+            ],
+            'slug' => [
+                'nullable',
+                'string',
+                'max:255',
+                // Unique slug per model
+                Rule::unique('custom_fields', 'slug')->where(fn ($q) => $q->where('model', $this->model))->ignore($customFieldId),
             ],
             'model' => ['required', 'string', Rule::in($validModels), 'bail'],
             'type' => ['required', 'string', Rule::in($validTypes), 'bail'],
@@ -88,8 +99,8 @@ trait CustomFieldValidationRules
                     $handler = app(FieldTypeRegistry::class)->get($this->type);
                     if ($handler) {
                         $allowedRules = $handler->allowedRules();
-                        $allowedRuleNames = array_map(fn($rule) => $rule->name(), $allowedRules);
-                        
+                        $allowedRuleNames = array_map(fn ($rule) => $rule->name(), $allowedRules);
+
                         $registry = app(\Salah\LaravelCustomFields\ValidationRuleRegistry::class);
                         foreach (array_keys($value) as $ruleName) {
                             if (is_numeric($ruleName)) {
@@ -118,6 +129,7 @@ trait CustomFieldValidationRules
                 foreach ($this->validation_rules as $ruleName => $ruleValue) {
                     if (is_numeric($ruleName)) {
                         $rules["validation_rules.$ruleName"] = 'string'; // The base rule itself (e.g., 'string', 'numeric')
+
                         continue;
                     }
 

@@ -1,7 +1,7 @@
 <?php
 
-use Salah\LaravelCustomFields\Http\Controllers\CustomFieldApiController;
 use Illuminate\Support\Facades\Route;
+use Salah\LaravelCustomFields\Http\Controllers\CustomFieldApiController;
 
 Route::group([
     'prefix' => config('custom-fields.routing.api.prefix', 'api/custom-fields'),

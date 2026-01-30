@@ -25,8 +25,6 @@ abstract class FieldType implements ConfigurableElement
         return 'input';
     }
 
-    /**
-     */
     public function htmlType(): string
     {
         return 'text';
@@ -98,7 +96,7 @@ abstract class FieldType implements ConfigurableElement
     public function validateRules(array $rules): void
     {
         $allowedRules = $this->allowedRules();
-        $allowedRuleNames = array_map(fn(ValidationRule $rule) => $rule->name(), $allowedRules);
+        $allowedRuleNames = array_map(fn (ValidationRule $rule) => $rule->name(), $allowedRules);
 
         foreach (array_keys($rules) as $rule) {
             if (! in_array($rule, $allowedRuleNames)) {

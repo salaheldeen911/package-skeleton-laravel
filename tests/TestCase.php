@@ -2,9 +2,9 @@
 
 namespace Salah\LaravelCustomFields\Tests;
 
-use Salah\LaravelCustomFields\LaravelCustomFieldsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Salah\LaravelCustomFields\LaravelCustomFieldsServiceProvider;
 
 class TestCase extends Orchestra
 {

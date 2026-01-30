@@ -2,28 +2,24 @@
 
 namespace Salah\LaravelCustomFields;
 
-use Salah\LaravelCustomFields\FieldTypeRegistry;
-use Salah\LaravelCustomFields\ValidationRuleRegistry;
 use Salah\LaravelCustomFields\Commands\InstallCommand;
 use Salah\LaravelCustomFields\Commands\LaravelCustomFieldsCommand;
 use Salah\LaravelCustomFields\FieldTypes\CheckboxField;
+use Salah\LaravelCustomFields\FieldTypes\DateField;
+use Salah\LaravelCustomFields\FieldTypes\EmailField;
 use Salah\LaravelCustomFields\FieldTypes\NumberField;
 use Salah\LaravelCustomFields\FieldTypes\PhoneField;
-use Salah\LaravelCustomFields\FieldTypes\EmailField;
 use Salah\LaravelCustomFields\FieldTypes\SelectField;
 use Salah\LaravelCustomFields\FieldTypes\TextField;
-use Salah\LaravelCustomFields\FieldTypes\DateField;
 use Salah\LaravelCustomFields\FieldTypes\UrlField;
-use Salah\LaravelCustomFields\ValidationRules\EmailRule;
-use Salah\LaravelCustomFields\ValidationRules\UrlRule;
 use Salah\LaravelCustomFields\ValidationRules\AfterDateRule;
-use Salah\LaravelCustomFields\ValidationRules\BeforeDateRule;
 use Salah\LaravelCustomFields\ValidationRules\AfterOrEqualDateRule;
-use Salah\LaravelCustomFields\ValidationRules\BeforeOrEqualDateRule;
-use Salah\LaravelCustomFields\ValidationRules\DateFormatRule;
 use Salah\LaravelCustomFields\ValidationRules\AlphaDashRule;
 use Salah\LaravelCustomFields\ValidationRules\AlphaNumRule;
 use Salah\LaravelCustomFields\ValidationRules\AlphaRule;
+use Salah\LaravelCustomFields\ValidationRules\BeforeDateRule;
+use Salah\LaravelCustomFields\ValidationRules\BeforeOrEqualDateRule;
+use Salah\LaravelCustomFields\ValidationRules\DateFormatRule;
 use Salah\LaravelCustomFields\ValidationRules\MaxRule;
 use Salah\LaravelCustomFields\ValidationRules\MinRule;
 use Salah\LaravelCustomFields\ValidationRules\NotRegexRule;
@@ -80,8 +76,6 @@ class LaravelCustomFieldsServiceProvider extends PackageServiceProvider
             $registry->register(new AlphaDashRule);
             $registry->register(new AlphaNumRule);
             $registry->register(new PhoneRule);
-            $registry->register(new EmailRule);
-            $registry->register(new UrlRule);
             $registry->register(new AfterDateRule);
             $registry->register(new BeforeDateRule);
             $registry->register(new AfterOrEqualDateRule);
@@ -90,6 +84,17 @@ class LaravelCustomFieldsServiceProvider extends PackageServiceProvider
 
             return $registry;
         });
+
+        $this->app->singleton(\Salah\LaravelCustomFields\Services\CustomFieldsService::class, function ($app) {
+            return new \Salah\LaravelCustomFields\Services\CustomFieldsService(
+                $app->make(\Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface::class)
+            );
+        });
+
+        $this->app->bind(
+            \Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface::class,
+            \Salah\LaravelCustomFields\Repositories\CustomFieldRepository::class
+        );
     }
 
     public function packageBooted(): void

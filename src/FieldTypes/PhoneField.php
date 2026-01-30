@@ -39,7 +39,7 @@ class PhoneField extends FieldType
     public function allowedRules(): array
     {
         return [
-            new PhoneRule(),
+            new PhoneRule,
         ];
     }
 

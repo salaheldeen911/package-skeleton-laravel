@@ -2,25 +2,28 @@
 
 namespace Salah\LaravelCustomFields\Models;
 
-use Salah\LaravelCustomFields\FieldTypeRegistry;
-use Salah\LaravelCustomFields\FieldTypes\FieldType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Salah\LaravelCustomFields\FieldTypeRegistry;
+use Salah\LaravelCustomFields\FieldTypes\FieldType;
 
 class CustomField extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $guard_name = 'api';
+
     protected $table = 'custom_fields';
+
     protected $casts = [
         'options' => 'array',
         'validation_rules' => 'array',
         'required' => 'boolean',
     ];
+
     protected $fillable = [
         'name',
         'slug',
@@ -42,7 +45,7 @@ class CustomField extends Model
         });
 
         static::updating(function ($customField) {
-            if ($customField->isDirty('name')) {
+            if ($customField->isDirty('name') && ! $customField->isDirty('slug')) {
                 $customField->slug = Str::slug($customField->name);
             }
         });

@@ -19,7 +19,12 @@ class BeforeDateRule extends ValidationRule
         return ['date'];
     }
 
-    public function inputType(): string
+    public function htmlTag(): string
+    {
+        return 'input';
+    }
+
+    public function htmlType(): string
     {
         return 'date';
     }

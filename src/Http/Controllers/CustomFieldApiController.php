@@ -2,28 +2,25 @@
 
 namespace Salah\LaravelCustomFields\Http\Controllers;
 
-use Salah\LaravelCustomFields\Filters\FilterEngine;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
 use Salah\LaravelCustomFields\Http\Requests\FilterCustomFieldRequest;
 use Salah\LaravelCustomFields\Http\Requests\StoreCustomFieldRequest;
 use Salah\LaravelCustomFields\Http\Requests\UpdateCustomFieldRequest;
 use Salah\LaravelCustomFields\Http\Resources\CustomFieldResource;
-use Salah\LaravelCustomFields\Models\CustomField;
+use Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface;
 use Salah\LaravelCustomFields\Services\CustomFieldsMetaService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Routing\Controller;
 
 class CustomFieldApiController extends Controller
 {
     public function __construct(
-        protected CustomFieldsMetaService $metaService
+        protected CustomFieldsMetaService $metaService,
+        protected CustomFieldRepositoryInterface $repository
     ) {}
 
     public function index(FilterCustomFieldRequest $request): JsonResponse
     {
-        $customFields = (new FilterEngine)
-            ->apply($request->all())
-            ->latest()
-            ->paginate($request->get('limit', 15));
+        $customFields = $this->repository->paginate($request->all(), $request->get('limit', 15));
 
         return response()->json([
             'success' => true,
@@ -36,12 +33,7 @@ class CustomFieldApiController extends Controller
                     'current_page' => $customFields->currentPage(),
                     'total_pages' => $customFields->lastPage(),
                 ],
-                'stats' => CustomField::selectRaw("
-                    COUNT(*) as total,
-                    COUNT(DISTINCT model) as models,
-                    COUNT(DISTINCT type) as types,
-                    SUM(CASE WHEN JSON_EXTRACT(validation_rules, '$.required') = 1 THEN 1 ELSE 0 END) as required
-                ")->first()->toArray(),
+                'stats' => $this->repository->getStats(),
             ],
             'links' => [
                 'first' => $customFields->url(1),
@@ -62,7 +54,7 @@ class CustomFieldApiController extends Controller
 
     public function store(StoreCustomFieldRequest $request): JsonResponse
     {
-        $customField = CustomField::create($request->validated());
+        $customField = $this->repository->store($request->validated());
 
         $this->metaService->clearCache();
 
@@ -75,7 +67,7 @@ class CustomFieldApiController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $customField = CustomField::withTrashed()->findOrFail($id);
+        $customField = $this->repository->findById($id, true);
 
         return response()->json([
             'success' => true,
@@ -85,8 +77,7 @@ class CustomFieldApiController extends Controller
 
     public function update(UpdateCustomFieldRequest $request, string $id): JsonResponse
     {
-        $customField = CustomField::withTrashed()->findOrFail($id);
-        $customField->update($request->validated());
+        $customField = $this->repository->update($id, $request->validated());
 
         $this->metaService->clearCache();
 
@@ -99,8 +90,7 @@ class CustomFieldApiController extends Controller
 
     public function destroy(string $id): JsonResponse
     {
-        $customField = CustomField::findOrFail($id);
-        $customField->delete();
+        $this->repository->delete($id);
 
         $this->metaService->clearCache();
 
@@ -112,20 +102,18 @@ class CustomFieldApiController extends Controller
 
     public function restore(string $id): JsonResponse
     {
-        $customField = CustomField::onlyTrashed()->findOrFail($id);
-        $customField->restore();
+        $customField = $this->repository->restore($id);
 
         return response()->json([
             'success' => true,
             'message' => 'Custom field restored successfully.',
-            'data' => new CustomFieldResource($customField),
+            'data' => new CustomFieldResource($this->repository->findById($id, true)),
         ]);
     }
 
     public function forceDestroy(string $id): JsonResponse
     {
-        $customField = CustomField::withTrashed()->findOrFail($id);
-        $customField->forceDelete();
+        $this->repository->forceDelete($id);
 
         $this->metaService->clearCache();
 

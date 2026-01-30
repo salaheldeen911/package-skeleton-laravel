@@ -2,9 +2,9 @@
 
 namespace Salah\LaravelCustomFields\Filters;
 
-use Salah\LaravelCustomFields\Models\CustomField;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Salah\LaravelCustomFields\Models\CustomField;
 
 class FilterEngine
 {

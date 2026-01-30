@@ -3,8 +3,8 @@
 namespace Salah\LaravelCustomFields\FieldTypes;
 
 use Salah\LaravelCustomFields\ValidationRules\AfterDateRule;
-use Salah\LaravelCustomFields\ValidationRules\BeforeDateRule;
 use Salah\LaravelCustomFields\ValidationRules\AfterOrEqualDateRule;
+use Salah\LaravelCustomFields\ValidationRules\BeforeDateRule;
 use Salah\LaravelCustomFields\ValidationRules\BeforeOrEqualDateRule;
 use Salah\LaravelCustomFields\ValidationRules\DateFormatRule;
 
@@ -43,11 +43,11 @@ class DateField extends FieldType
     public function allowedRules(): array
     {
         return [
-            new AfterDateRule(),
-            new BeforeDateRule(),
-            new AfterOrEqualDateRule(),
-            new BeforeOrEqualDateRule(),
-            new DateFormatRule(),
+            new AfterDateRule,
+            new BeforeDateRule,
+            new AfterOrEqualDateRule,
+            new BeforeOrEqualDateRule,
+            new DateFormatRule,
         ];
     }
 

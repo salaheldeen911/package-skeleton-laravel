@@ -21,8 +21,8 @@ class FieldValidationRule extends ValidationRule
 
     public function baseRule(): array
     {
-        return $this->baseRuleOverride !== null 
-            ? (array) $this->baseRuleOverride 
+        return $this->baseRuleOverride !== null
+            ? (array) $this->baseRuleOverride
             : $this->rule->baseRule();
     }
 
@@ -69,4 +69,3 @@ class FieldValidationRule extends ValidationRule
         return $this->rule;
     }
 }
-

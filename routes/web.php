@@ -2,8 +2,8 @@
 
 // use YourVendor\LaravelCustomFields\Http\Controllers\CustomFieldController;
 
-use Salah\LaravelCustomFields\Http\Controllers\CustomFieldController;
 use Illuminate\Support\Facades\Route;
+use Salah\LaravelCustomFields\Http\Controllers\CustomFieldController;
 
 Route::group([
     'prefix' => config('custom-fields.routing.web.prefix', 'custom-fields'),

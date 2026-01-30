@@ -2,11 +2,11 @@
 
 namespace Salah\LaravelCustomFields\Http\Requests;
 
-use Salah\LaravelCustomFields\FieldTypeRegistry;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Log;
+use Salah\LaravelCustomFields\FieldTypeRegistry;
 use Salah\LaravelCustomFields\Traits\CustomFieldValidationRules;
-use \Illuminate\Contracts\Validation\Validator;
 
 class UpdateCustomFieldRequest extends FormRequest
 {
@@ -55,11 +55,11 @@ class UpdateCustomFieldRequest extends FormRequest
             if (is_string($rules)) {
                 $rules = json_decode($rules, true);
             }
-            
+
             if (is_array($rules)) {
                 $rules = $this->prepareRulesForStorage($rules, $this->type);
             }
-            
+
             $this->merge(['validation_rules' => $rules]);
         }
     }

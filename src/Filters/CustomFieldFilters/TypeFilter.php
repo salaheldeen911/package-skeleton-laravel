@@ -2,8 +2,8 @@
 
 namespace Salah\LaravelCustomFields\Filters\CustomFieldFilters;
 
-use Salah\LaravelCustomFields\Filters\FilterInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Salah\LaravelCustomFields\Filters\FilterInterface;
 
 class TypeFilter implements FilterInterface
 {

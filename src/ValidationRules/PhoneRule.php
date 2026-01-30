@@ -19,9 +19,9 @@ class PhoneRule extends ValidationRule
         return ['string'];
     }
 
-    public function inputType(): string
+    public function htmlTag(): string
     {
-        return 'text';
+        return 'input';
     }
 
     public function placeholder(): string
@@ -32,6 +32,11 @@ class PhoneRule extends ValidationRule
     public function description(): string
     {
         return 'Validates the phone number format. Leave empty for automatic detection.';
+    }
+
+    public function defaultConfigValue(): mixed
+    {
+        return '';
     }
 
     public function apply($value): string

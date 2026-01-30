@@ -19,21 +19,6 @@ class AlphaNumRule extends ValidationRule
         return ['boolean'];
     }
 
-    public function htmlTag(): string
-    {
-        return 'checkbox';
-    }
-
-    public function htmlType(): string
-    {
-        return '';
-    }
-
-    public function placeholder(): string
-    {
-        return '';
-    }
-
     public function description(): string
     {
         return 'Validates that the input contains only alphabetic and numeric characters.';

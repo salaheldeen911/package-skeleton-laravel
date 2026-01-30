@@ -16,7 +16,7 @@ class MaxRule extends ValidationRule
 
     public function baseRule(): array
     {
-        return ['required', 'integer'];
+        return ['integer'];
     }
 
     public function htmlTag(): string

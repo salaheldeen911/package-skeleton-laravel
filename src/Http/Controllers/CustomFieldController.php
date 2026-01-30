@@ -2,37 +2,26 @@
 
 namespace Salah\LaravelCustomFields\Http\Controllers;
 
-use Salah\LaravelCustomFields\Filters\FilterEngine;
-use Salah\LaravelCustomFields\Http\Requests\FilterCustomFieldRequest;
-use Salah\LaravelCustomFields\Http\Requests\StoreCustomFieldRequest;
-use Salah\LaravelCustomFields\Http\Requests\UpdateCustomFieldRequest;
-use Salah\LaravelCustomFields\Models\CustomField;
-use Salah\LaravelCustomFields\Services\CustomFieldsMetaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
+use Salah\LaravelCustomFields\Http\Requests\FilterCustomFieldRequest;
+use Salah\LaravelCustomFields\Http\Requests\StoreCustomFieldRequest;
+use Salah\LaravelCustomFields\Http\Requests\UpdateCustomFieldRequest;
+use Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface;
+use Salah\LaravelCustomFields\Services\CustomFieldsMetaService;
 
 class CustomFieldController extends Controller
 {
     public function __construct(
-        protected CustomFieldsMetaService $metaService
+        protected CustomFieldsMetaService $metaService,
+        protected CustomFieldRepositoryInterface $repository
     ) {}
 
     public function index(FilterCustomFieldRequest $request): View
     {
-        $customFields = (new FilterEngine)
-            ->apply($request->all())
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
-
-        $stats = CustomField::selectRaw('
-            COUNT(*) as total,
-            COUNT(DISTINCT model) as models,
-            COUNT(DISTINCT type) as types,
-            SUM(CASE WHEN required = 1 THEN 1 ELSE 0 END) as required
-        ')->first()->toArray();
-
+        $customFields = $this->repository->paginate($request->all(), 10);
+        $stats = $this->repository->getStats();
         $meta = $this->metaService->forIndex();
         $models = $meta['models'];
         $types = $meta['types'];
@@ -49,7 +38,7 @@ class CustomFieldController extends Controller
 
     public function store(StoreCustomFieldRequest $request): RedirectResponse
     {
-        CustomField::create($request->validated());
+        $this->repository->store($request->validated());
 
         $this->metaService->clearCache();
 
@@ -58,14 +47,14 @@ class CustomFieldController extends Controller
 
     public function show(string $id): View
     {
-        $customField = CustomField::withTrashed()->findOrFail($id);
+        $customField = $this->repository->findById($id, true);
 
         return view('custom-fields::show', compact('customField'));
     }
 
     public function edit(string $id): View
     {
-        $customField = $this->findWithTrashed($id);
+        $customField = $this->repository->findById($id, true);
         $fieldBuilderMeta = $this->metaService->forBuilder();
 
         return view('custom-fields::edit', ['customField' => $customField, 'meta' => $fieldBuilderMeta]);
@@ -73,9 +62,7 @@ class CustomFieldController extends Controller
 
     public function update(UpdateCustomFieldRequest $request, string $id): RedirectResponse
     {
-        $customField = $this->findWithTrashed($id);
-
-        $customField->update($request->validated());
+        $this->repository->update($id, $request->validated());
 
         $this->metaService->clearCache();
 
@@ -84,8 +71,7 @@ class CustomFieldController extends Controller
 
     public function destroy(string $id): RedirectResponse
     {
-        $customField = CustomField::findOrFail($id);
-        $customField->delete();
+        $this->repository->delete($id);
 
         $this->metaService->clearCache();
 
@@ -94,24 +80,17 @@ class CustomFieldController extends Controller
 
     public function restore(string $id): RedirectResponse
     {
-        $customField = CustomField::onlyTrashed()->findOrFail($id);
-        $customField->restore();
+        $this->repository->restore($id);
 
         return redirect()->route('custom-fields.index')->with('success', 'Custom field restored successfully.');
     }
 
     public function forceDelete(string $id): RedirectResponse
     {
-        $customField = CustomField::onlyTrashed()->findOrFail($id);
-        $customField->forceDelete();
+        $this->repository->forceDelete($id);
 
         $this->metaService->clearCache();
 
         return redirect()->route('custom-fields.index')->with('success', 'Custom field permanently deleted.');
-    }
-
-    protected function findWithTrashed(string $id): CustomField
-    {
-        return CustomField::withTrashed()->findOrFail($id);
     }
 }

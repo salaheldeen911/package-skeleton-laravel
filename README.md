@@ -1,23 +1,24 @@
 # Laravel Custom Fields
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/salaheldeen911/laravel-custom-fields.svg?style=flat-square)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
-[![Total Downloads](https://img.shields.io/packagist/dt/salaheldeen911/laravel-custom-fields.svg?style=flat-square)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
-[![License](https://img.shields.io/packagist/l/salaheldeen911/laravel-custom-fields.svg?style=flat-square)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/salaheldeen911/laravel-custom-fields.svg?style=for-the-badge&color=blue)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+[![Total Downloads](https://img.shields.io/packagist/dt/salaheldeen911/laravel-custom-fields.svg?style=for-the-badge&color=green)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+[![PHP Version](https://img.shields.io/packagist/php-v/salaheldeen911/laravel-custom-fields.svg?style=for-the-badge&color=777bb4)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
+[![License](https://img.shields.io/packagist/l/salaheldeen911/laravel-custom-fields.svg?style=for-the-badge&color=orange)](https://packagist.org/packages/salaheldeen911/laravel-custom-fields)
 
-**The Ultimate "Sealed Lifecycle" EAV Solution for Enterprise Laravel Applications.**
+**The Professional, Sealed-Lifecycle EAV Solution for Modern Laravel Applications.**
 
-Treat user-defined fields as first-class citizens. This package provides high-performance, strictly validated, and highly extensible custom fields with native support for both **Blade (Full-Stack)** and **Headless (API)** architectures.
+Tired of messy "extra_attributes" JSON columns that are impossible to validate? Treat user-defined fields as first-class citizens. This package provides high-performance, strictly validated, and extensible custom fields with native support for both **Blade (Full-Stack)** and **Headless (API)** architectures.
 
 ---
 
-## 🔥 Key Differentiators
+## 🔥 Why This Package?
 
-- **🛡 Meta-Validation**: We don't just validate field values; we validate the _rules_ themselves. Ensure `min < max` and `regex` patterns are valid _before_ they are saved.
-- **⚡️ High-Performance Engine**: Optimized with database `upserts` and batch operations. Reduces database overhead from N queries to just **one** per request.
-- **🏗 Robust Polymorphism**: Uses a `config` map for models. High stability even if you refactor model class names/namespaces.
-- **🧩 Architecture Agnostic**:
-    - **Blade Version**: Ready-to-use Tailwind components for rapid development.
-    - **Headless Version**: Rich metadata API (`models-and-types`) for React/Vue/Mobile applications.
+- **🛡 Strict Lifecycle**: We validate the _rules_ themselves. You can't save a `min > max` or an invalid `regex`.
+- **⚡️ Built for Speed**: Uses database `upserts` and batch operations. Reduces database overhead from N queries to just **one** per guest.
+- **🏗 Refactor-Safe Polymorphism**: Uses a `config` map for models. High stability even if you change model namespaces.
+- **🧩 Dual-Nature Architecture**: 
+    - **Blade**: Ready-to-use Tailwind components with error handling and old-input support.
+    - **Headless**: Rich metadata API (`models-and-types`) explaining rules, labels, and tags to your Frontend.
 
 ---
 
@@ -27,7 +28,7 @@ Treat user-defined fields as first-class citizens. This package provides high-pe
 composer require salaheldeen911/laravel-custom-fields
 ```
 
-**Installer**: Publishes config, migrations, and assets.
+Install the package (publishes config, migrations, and assets):
 
 ```bash
 php artisan custom-fields:install
@@ -37,7 +38,7 @@ php artisan custom-fields:install
 
 ## ⚙️ Configuration
 
-1. **Map Your Models**: In `config/custom-fields.php`, define aliases for your models to maintain database stability.
+1. **Map Your Models**: In `config/custom-fields.php`, define simple aliases for your models. This decouples your database from your class names.
 
     ```php
     'models' => [
@@ -46,7 +47,7 @@ php artisan custom-fields:install
     ],
     ```
 
-2. **Prepare Models**: Add the `HasCustomFields` trait to any model that should support custom fields.
+2. **Prepare Your Model**: Add the `HasCustomFields` trait.
 
     ```php
     use Salah\LaravelCustomFields\Traits\HasCustomFields;
@@ -58,177 +59,233 @@ php artisan custom-fields:install
 
 ---
 
-## 🏛 Usage: Blade Version (Full-Stack)
+## 🏛 Usage: The Laravel Way
 
-### 1. Rendering Inputs
-
-Use the provided `<x-custom-fields::render>` component to automatically generate the correct input type (text, number, select, etc.) with its specific validation rules and options.
+### 1. Rendering the UI (Blade)
+Automatically render all custom fields for a specific model using a single tag. It handles `errors`, `old()`, and specific input types.
 
 ```blade
 <form action="{{ route('users.store') }}" method="POST">
     @csrf
 
     <!-- Standard Fields -->
-    <input type="text" name="name" value="{{ old('name') }}" />
+    <input type="text" name="name" />
 
-    <!-- Dynamic Custom Fields -->
+    <!-- Dynamic Custom Fields Magic -->
     <x-custom-fields::render :model="$user ?? null" :customFields="\App\Models\User::customFields()" />
 
     <button type="submit">Save</button>
 </form>
 ```
 
-### 2. Validation & Storing
-
-In your controller, you can use the trait's methods to handle validation and storage seamlessly.
+### 2. Validation (Option A: Form Request - Recommended)
+The cleanest way to validate custom fields is by using the `ValidatesCustomFields` trait in your Form Request.
 
 ```php
-public function store(Request $request)
-{
-    // 1. Standard Validation
-    $request->validate(['name' => 'required']);
+use Salah\LaravelCustomFields\Traits\ValidatesCustomFields;
 
-    // 2. Custom Fields Validation
-    $validator = User::customFieldsValidation($request);
-    if ($validator->fails()) {
-        return back()->withErrors($validator)->withInput();
+class StoreUserRequest extends FormRequest
+{
+    use ValidatesCustomFields;
+
+    public function rules(): array
+    {
+        return $this->withCustomFieldsRules(User::class, [
+            'name' => 'required|string|max:255',
+        ]);
     }
-
-    // 3. Create Model
-    $user = User::create($request->only('name'));
-
-    // 4. Save Custom Fields (Optimized Batch Insert)
-    $user->saveCustomFields($request->all());
-
-    return redirect()->route('users.index');
 }
 ```
 
-### 3. Updating Values
-
-Updating is just as easy and uses high-performance `upsert` logic.
+### 3. Validation (Option B: Controller)
+If you prefer validating in the controller, use the helper method on the model:
 
 ```php
-public function update(Request $request, User $user)
-{
-    // Validate
-    $validator = User::customFieldsValidation($request);
-    if ($validator->fails()) return back()->withErrors($validator)->withInput();
+$validated = $request->validate(array_merge([
+    'name' => 'required',
+], User::getCustomFieldRules()));
+```
 
-    // Update Main Model
-    $user->update($request->only('name'));
+### 4. Storage & Updates
+Use optimized batch methods to save or update custom values.
 
-    // Update Custom Fields
-    $user->updateCustomFields($request->all());
+```php
+// Storing
+$user = User::create($request->validated());
+$user->saveCustomFields($request->validated());
 
-    return back();
-}
+// Updating (Uses high-performance UPSERT logic)
+$user->update($request->validated());
+$user->updateCustomFields($request->validated());
 ```
 
 ---
 
-## 🏛 Usage: Headless Version (API)
-
-### 1. Fetching Specifications
-
-Call `GET /api/custom-fields/models-and-types` to get the list of supported models and the metadata for each field type (including allowed validation rules).
-
-The package expects custom field data in a simple key-value format where the key is the field's `slug`.
-
-```json
-{
-    "name": "John Doe",
-    "biography": "Author and developer.",
-    "age": 30
-}
-```
-
----
-
-## 🔍 Retrieval & Querying
+## 🔍 Retrieval & Powerful Querying
 
 ### Get Single Value
-
 ```php
 $bio = $user->custom('biography');
 ```
 
 ### Get All Values (Flat Array)
-
-Useful for API responses via `JsonResource`.
-
+Perfect for API responses or data exports.
 ```php
 return response()->json([
-    'data' => $user,
-    'custom_fields' => $user->customFieldsResponse()
+    'user' => $user,
+    'custom_data' => $user->customFieldsResponse()
 ]);
-// Output: {"biography": "...", "age": 30}
+// Response: {"biography": "...", "age": 30, "city": "Cairo"}
 ```
 
-### Querying by Custom Field
-
-Find users where a custom field matches a value.
+### Querying like a Pro
+The package provides a powerful scope to filter your models by custom fields values.
 
 ```php
-$users = User::whereCustomField('city', 'New York')->get();
+// Find users in Cairo
+$users = User::whereCustomField('city', 'Cairo')->get();
 ```
 
 ---
 
-## 🛠 Advanced Features
+## ⚡️ Performance & Eager Loading
 
-### Supported Field Types
-
-- `text`: Standard text input.
-- `number`: Numeric input with `min`/`max` support.
-- `phone`: Specialized phone validation.
-- `select`: Dropdown with configurable options.
-- `checkbox`: Boolean or multiple choice.
-
-### Meta-Validation
-
-The package ensures that when you _create_ a custom field, its configuration is valid:
-
-- **Regex Safety**: Validates that the regex pattern is a valid PHP regex.
-- **Range Safety**: Automatically ensures `min` cannot be greater than `max`.
-- **Constraint Safety**: Only allows validation rules that make sense for the field type (e.g., `max` length for text, `min` value for numbers).
-
----
-
-## 🔌 Extending the Core
-
-### New Field Type
-
-Register a new field type by extending `FieldType`:
+To avoid the **N+1 query problem** when displaying multiple models (like a list of users with their custom fields), always use the `withCustomFields` scope. This eager loads all values and their field configurations in just two queries.
 
 ```php
-namespace App\CustomFields;
+// Optimized for lists/tables
+$users = User::withCustomFields()->paginate(20);
 
-use Salah\LaravelCustomFields\FieldTypes\FieldType;
-
-class ColorPickerType extends FieldType {
-    public function name(): string { return 'color'; }
-    public function baseRule(): string { return 'string|size:7'; }
-    public function allowedRules(): array { return ['required' => 'boolean']; }
-    public function view(): string { return 'components.color-picker'; }
+foreach ($users as $user) {
+    echo $user->custom('biography'); // No extra queries!
 }
 ```
 
-### New Validation Rule
+---
 
-Extend `ValidationRule` to add logic like `UniqueVatNumber` or specialized formatting.
+## 🧩 Built-in Field Types
+
+| Type | Default Control | Supported Rules |
+| :--- | :--- | :--- |
+| `text` | `<input type="text">` | `min`, `max`, `regex`, `alpha`, `alpha_dash`, `email`, `url` |
+| `number` | `<input type="number">` | `min`, `max` |
+| `date` | `<input type="date">` | `after`, `before`, `after_or_equal`, `before_or_equal`, `date_format` |
+| `select` | `<select>` | `required` (Values are strictly validated against options) |
+| `checkbox`| `<input type="checkbox">`| `required` |
+| `phone` | `<input type="tel">` | `phone` (Specialized mobile validation) |
+
+---
+
+## 🛠 Advanced Customization
+
+### Registering New Types
+Create a class extending `FieldType` and register it in your `AppServiceProvider`. This allows you to create completely custom UI components (like a Map Picker or Image Upload) that behave like standard fields.
+
+```php
+public function boot() {
+    $this->app->make(FieldTypeRegistry::class)->register(new MyCustomType());
+}
+```
+
+### Extending Validation Rules
+You can add your own validation rules to the system. For example, if you want a `UniqueSocialSecurity` rule:
+
+```php
+// In AppServiceProvider
+public function boot() {
+    $this->app->make(ValidationRuleRegistry::class)->register(new SsnValidationRule());
+}
+```
+
+---
+
+## 🏛 Headless & API Reference
+
+This package is a first-class citizen for Headless architectures. It provides a built-in API to manage custom fields and provides the necessary metadata for frontends to render them.
+
+### 1. The Blueprint (Metadata)
+Before rendering any UI, your frontend (React/Vue/Mobile) should fetch the types and rules.
+
+**Endpoint:** `GET /api/custom-fields/models-and-types`
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "models": ["user", "product"],
+    "types": [
+      {
+        "name": "text",
+        "label": "Text Field",
+        "tag": "input",
+        "type": "text",
+        "has_options": false,
+        "allowed_rules": [
+          { "name": "min", "label": "Min Length", "tag": "input", "type": "number" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 2. Managing Fields (CRUD API)
+If you are building your own Admin Dashboard in a JS framework, use these endpoints:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **GET** | `/api/custom-fields` | List all fields (Paginated) |
+| **POST** | `/api/custom-fields` | Create a new field |
+| **GET** | `/api/custom-fields/{id}` | Get field details |
+| **PUT** | `/api/custom-fields/{id}` | Update field configuration |
+| **DELETE** | `/api/custom-fields/{id}` | Soft delete a field |
+
+#### Example: Creating a Field
+**Payload (`POST /api/custom-fields`):**
+```json
+{
+  "name": "Technical Bio",
+  "model": "user",
+  "type": "text",
+  "required": true,
+  "validation_rules": {
+    "min": 10,
+    "max": 500
+  }
+}
+```
+
+### 3. Storing Values (Entity Integration)
+When your frontend sends data to update a model (like a User profile), send the custom fields as a flat object where the key is the **slug**.
+
+**Payload (`PUT /api/users/12`):**
+```json
+{
+  "name": "Salah Eldeen",
+  "email": "salah@example.com",
+  "technical-bio": "Full-stack developer with 10 years of experience."
+}
+```
+
+**Controller Implementation:**
+```php
+public function update(Request $request, User $user) {
+    $user->update($request->all());
+    $user->updateCustomFields($request->all()); // Scans for slugs and updates values automatically
+    
+    return response()->json(['success' => true]);
+}
+```
 
 ---
 
 ## 🎨 Management UI
-
-The package comes with a built-in UI to manage your custom fields.
-
-- **Route**: `/custom-fields` (configurable in `config/custom-fields.php`)
-- **Features**: List, Create, Edit, Soft Delete, and Restore custom fields.
+The package comes with a built-in, secure management interface to create and manage fields.
+- **Route**: `/custom-fields` (Configurable)
+- **Features**: List, Search, Create, Edit, and Trash management.
 
 ---
 
 ## 📄 License
-
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.

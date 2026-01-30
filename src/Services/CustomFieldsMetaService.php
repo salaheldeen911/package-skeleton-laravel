@@ -66,7 +66,7 @@ class CustomFieldsMetaService
                 element: $type,
                 additionalData: [
                     'has_options' => $type->hasOptions(),
-                    'allowed_rules' => $fieldRuleDetails
+                    'allowed_rules' => $fieldRuleDetails,
                 ]
             ))->toArray();
         }
@@ -85,4 +85,3 @@ class CustomFieldsMetaService
         return $details;
     }
 }
-

@@ -46,8 +46,8 @@ class CheckboxField extends FieldType
     public function allowedRules(): array
     {
         return [
-            new FieldValidationRule(new MinRule(), ['integer', 'min:0']),
-            new FieldValidationRule(new MaxRule(), ['integer', 'min:0']),
+            new FieldValidationRule(new MinRule, ['integer', 'min:0']),
+            new FieldValidationRule(new MaxRule, ['integer', 'min:0']),
         ];
     }
 

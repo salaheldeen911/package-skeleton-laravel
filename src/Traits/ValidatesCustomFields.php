@@ -12,22 +12,22 @@ trait ValidatesCustomFields
      */
     public function withCustomFieldsRules(string $modelClass, array $baseRules = []): array
     {
-        // Resolve alias if needed, though getValidationRules expects the 'value' stored in DB if we query CustomField.
-        // Wait, CustomFeields are stored with 'alias' in DB now.
-        // So we need to pass the alias to getValidationRules.
-
-        // We can't easily access the HasCustomFields trait alias resolver from here statically without the model instance.
-        // But the user passes $modelClass.
-
-        // Let's instantiate the service.
-        $service = new CustomFieldsService;
+        $service = app(CustomFieldsService::class);
 
         // Resolve alias
-        $alias = array_search($modelClass, config('custom-fields.models'));
+        $alias = array_search($modelClass, config('custom-fields.models', []));
         $target = $alias !== false ? $alias : $modelClass;
 
         $customRules = $service->getValidationRules($target);
 
         return array_merge($baseRules, $customRules);
+    }
+
+    /**
+     * Automatically mark the custom fields data as validated after FormRequest passes.
+     */
+    protected function passedValidation(): void
+    {
+        app(CustomFieldsService::class)->markAsValidated($this->validated());
     }
 }

@@ -46,13 +46,13 @@ class TextField extends FieldType
     public function allowedRules(): array
     {
         return [
-            new FieldValidationRule(new MinRule(), ['integer', 'min:0']),
-            new FieldValidationRule(new MaxRule(), ['integer', 'min:0']),
-            new RegexRule(),
-            new NotRegexRule(),
-            new AlphaRule(),
-            new AlphaDashRule(),
-            new AlphaNumRule(),
+            new FieldValidationRule(new MinRule, ['integer', 'min:0']),
+            new FieldValidationRule(new MaxRule, ['integer', 'min:0']),
+            new RegexRule,
+            new NotRegexRule,
+            new AlphaRule,
+            new AlphaDashRule,
+            new AlphaNumRule,
         ];
     }
 

@@ -16,11 +16,16 @@ class NotRegexRule extends ValidationRule
 
     public function baseRule(): array
     {
-        return ['required', 'string', function ($attribute, $value, $fail) {
+        return ['string', function ($attribute, $value, $fail) {
             if (@preg_match("/$value/", '') === false) {
                 $fail('The regular expression is invalid.');
             }
         }];
+    }
+
+    public function htmlTag(): string
+    {
+        return 'input';
     }
 
     public function placeholder(): string
