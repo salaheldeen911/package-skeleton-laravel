@@ -3,6 +3,8 @@
 namespace Salah\LaravelCustomFields\Services;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Validator as ValidationValidator;
 use Salah\LaravelCustomFields\Exceptions\ValidationIntegrityException;
@@ -91,7 +93,7 @@ class CustomFieldsService
                 'custom_field_id' => $customField->id,
                 'model_id' => $model->getKey(),
                 'model_type' => $model->getMorphClass(),
-                'value' => is_array($value) ? json_encode($value) : $value,
+                'value' => $this->prepareValueForStorage($value),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
@@ -99,6 +101,75 @@ class CustomFieldsService
 
         if (! empty($values)) {
             CustomFieldValue::insert($values);
+        }
+    }
+
+    /**
+     * Handle file uploads if present in the value.
+     */
+    protected function prepareValueForStorage($value, ?string $oldValue = null): mixed
+    {
+        // Handle Multiple Files (Array of UploadedFiles) - REMOVED
+        if (is_array($value) && ! empty($value) && $value[0] instanceof UploadedFile) {
+            throw new \InvalidArgumentException('Multiple file upload is not supported.');
+        }
+
+        // Handle Single File (UploadedFile)
+        if ($value instanceof UploadedFile) {
+            if ($oldValue && config('custom-fields.files.cleanup', true)) {
+                $this->deleteFile($oldValue);
+            }
+
+            return json_encode($this->storeFileItem($value));
+        }
+
+        return is_array($value) ? json_encode($value) : $value;
+    }
+
+    protected function storeFileItem(UploadedFile $file): array
+    {
+        $disk = config('custom-fields.files.disk', 'public');
+        $folder = config('custom-fields.files.path', 'custom-fields');
+        $path = $file->store($folder, $disk);
+
+        return [
+            'path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'mime_type' => $file->getMimeType(),
+            'size' => $file->getSize(),
+        ];
+    }
+
+    protected function deleteFile(string $value): void
+    {
+        $data = json_decode($value, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            return;
+        }
+
+        $disk = config('custom-fields.files.disk', 'public');
+
+        // Handle Single File
+        if (isset($data['path']) && Storage::disk($disk)->exists($data['path'])) {
+            Storage::disk($disk)->delete($data['path']);
+        }
+    }
+
+    /**
+     * Delete all files associated with a model's custom fields.
+     */
+    public function cleanupFilesForModel(Model $model): void
+    {
+        // Get all custom field values for this model that are of type 'file'
+        // We need to query values where the custom field type is 'file'
+        $values = $model->customFieldsValues()
+            ->whereHas('customField', function ($q) {
+                $q->where('type', 'file');
+            })
+            ->get();
+
+        foreach ($values as $fieldValue) {
+            $this->deleteFile($fieldValue->getAttributes()['value']);
         }
     }
 
@@ -121,11 +192,26 @@ class CustomFieldsService
                 continue;
             }
 
+            // Fetch existing value to check if we need to clean up old files
+            // This is a bit expensive but necessary for file cleanup during updates
+            // Optimization: Only do this if the new value is an UploadedFile
+            $oldValue = null;
+            if ($value instanceof UploadedFile) {
+                $existing = CustomFieldValue::where('custom_field_id', $customField->id)
+                    ->where('model_type', $model->getMorphClass())
+                    ->where('model_id', $model->getKey())
+                    ->first();
+                // Access raw attribute to get JSON string, avoiding accessor usage if possible,
+                // but our accessor handles JSON decoding, so we need raw for deleteFile logic which expects JSON string
+                // Wait, our deleteFile expects the *stored string*.
+                $oldValue = $existing ? $existing->getAttributes()['value'] : null;
+            }
+
             $values[] = [
                 'custom_field_id' => $customField->id,
                 'model_id' => $model->getKey(),
                 'model_type' => $model->getMorphClass(),
-                'value' => is_array($value) ? json_encode($value) : $value,
+                'value' => $this->prepareValueForStorage($value, $oldValue),
                 'updated_at' => now(),
             ];
         }
@@ -204,7 +290,11 @@ class CustomFieldsService
 
         $rules = array_merge($rules, $this->getCustomRules($customField));
 
-        return array_values(array_unique(array_filter($rules)));
+        $finalRules = array_values(array_unique(array_filter($rules)));
+
+        // Special handling for Multiple Files - REMOVED
+
+        return $finalRules;
     }
 
     protected function getRequirementRule(CustomField $customField): string

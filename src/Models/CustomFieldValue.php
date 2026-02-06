@@ -4,10 +4,33 @@ namespace Salah\LaravelCustomFields\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class CustomFieldValue extends Model
 {
     use HasFactory;
+
+    protected static function booted()
+    {
+        static::deleted(function ($customFieldValue) {
+            // Check if value looks like a file metadata JSON
+            $value = $customFieldValue->attributes['value'] ?? null;
+            if ($value && (str_starts_with($value, '{') || str_starts_with($value, '['))) {
+                if (! config('custom-fields.files.cleanup', true)) {
+                    return;
+                }
+
+                $data = json_decode($value, true);
+                $disk = config('custom-fields.files.disk', 'public');
+
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    if (isset($data['path']) && Storage::disk($disk)->exists($data['path'])) {
+                        Storage::disk($disk)->delete($data['path']);
+                    }
+                }
+            }
+        });
+    }
 
     protected $guard_name = 'api';
 

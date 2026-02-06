@@ -9,6 +9,7 @@ use Salah\LaravelCustomFields\FieldTypes\ColorField;
 use Salah\LaravelCustomFields\FieldTypes\DateField;
 use Salah\LaravelCustomFields\FieldTypes\DecimalField;
 use Salah\LaravelCustomFields\FieldTypes\EmailField;
+use Salah\LaravelCustomFields\FieldTypes\FileField;
 use Salah\LaravelCustomFields\FieldTypes\NumberField;
 use Salah\LaravelCustomFields\FieldTypes\PhoneField;
 use Salah\LaravelCustomFields\FieldTypes\SelectField;
@@ -27,7 +28,9 @@ use Salah\LaravelCustomFields\ValidationRules\AlphaRule;
 use Salah\LaravelCustomFields\ValidationRules\BeforeDateRule;
 use Salah\LaravelCustomFields\ValidationRules\BeforeOrEqualDateRule;
 use Salah\LaravelCustomFields\ValidationRules\DateFormatRule;
+use Salah\LaravelCustomFields\ValidationRules\MaxFileSizeRule;
 use Salah\LaravelCustomFields\ValidationRules\MaxRule;
+use Salah\LaravelCustomFields\ValidationRules\MimesRule;
 use Salah\LaravelCustomFields\ValidationRules\MinRule;
 use Salah\LaravelCustomFields\ValidationRules\NotRegexRule;
 use Salah\LaravelCustomFields\ValidationRules\PhoneRule;
@@ -73,6 +76,7 @@ class LaravelCustomFieldsServiceProvider extends PackageServiceProvider
             $registry->register(new EmailField);
             $registry->register(new UrlField);
             $registry->register(new ColorField);
+            $registry->register(new FileField);
 
             return $registry;
         });
@@ -92,6 +96,8 @@ class LaravelCustomFieldsServiceProvider extends PackageServiceProvider
             $registry->register(new AfterOrEqualDateRule);
             $registry->register(new BeforeOrEqualDateRule);
             $registry->register(new DateFormatRule);
+            $registry->register(new MimesRule);
+            $registry->register(new MaxFileSizeRule);
 
             return $registry;
         });

@@ -4,7 +4,6 @@ namespace Salah\LaravelCustomFields\Traits;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Salah\LaravelCustomFields\Models\CustomField;
 use Salah\LaravelCustomFields\Models\CustomFieldValue;
 use Salah\LaravelCustomFields\Repositories\CustomFieldRepositoryInterface;
 use Salah\LaravelCustomFields\Services\CustomFieldsService;
@@ -21,6 +20,12 @@ trait HasCustomFields
         static::deleting(function ($model) {
             if (method_exists($model, 'isForceDeleting') && ! $model->isForceDeleting()) {
                 return;
+            }
+            
+            // Clean up files before deleting records
+            if (config('custom-fields.files.cleanup', true)) {
+                $service = app(CustomFieldsService::class);
+                $service->cleanupFilesForModel($model);
             }
 
             $model->customFieldsValues()->delete();
@@ -89,6 +94,13 @@ trait HasCustomFields
     public function scopeWithCustomFields($query)
     {
         return $query->with(['customFieldsValues' => function ($q) {
+            $q->with('customField');
+        }]);
+    }
+
+    public function loadCustomFields()
+    {
+        return $this->load(['customFieldsValues' => function ($q) {
             $q->with('customField');
         }]);
     }
