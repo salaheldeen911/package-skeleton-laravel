@@ -216,7 +216,6 @@ foreach ($users as $user) {
 | `date` | 📅 | `<input type="date">` | `after`, `before`, `after_or_equal`, `date_format` |
 | `time` | 🕒 | `<input type="time">` | `required` (Standard string validation) |
 | `select` | 🔽 | `<select>` | `required` (Strictly validated against options) |
-| `radio` | 🔘 | `radio buttons` | `required` (Strictly validated against options) |
 | `checkbox` | ✅ | `<input type="checkbox">` | `required` |
 | `phone` | 📞 | `<input type="tel">` | `phone` (Supports formats or `AUTO` detection) |
 | `email` | ✉️ | `<input type="email">` | `min`, `max`, `regex` (Native email validation) |
