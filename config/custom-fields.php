@@ -12,7 +12,7 @@ return [
             'middleware' => ['api'],
         ],
         'web' => [
-            'enabled' => false,
+            'enabled' => true,
             'prefix' => 'custom-fields',
             'middleware' => ['web'],
         ],
