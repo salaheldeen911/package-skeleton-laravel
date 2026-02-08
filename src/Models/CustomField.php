@@ -114,5 +114,13 @@ class CustomField extends Model
         static::deleted(function ($customField) {
             Cache::forget('custom_fields_'.$customField->attributes['model']);
         });
+
+        static::forceDeleting(function ($customField) {
+            if ($customField->type === 'file') {
+                $customField->values()->each(function ($value) {
+                    $value->delete();
+                });
+            }
+        });
     }
 }

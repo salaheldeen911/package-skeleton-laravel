@@ -253,6 +253,7 @@ public function edit(User $user)
 | `email` | ✉️ | `<input type="email">` | `min`, `max`, `regex` (Native email validation) |
 | `url` | 🔗 | `<input type="url">` | `min`, `max`, `regex` (Native URL validation) |
 | `color` | 🎨 | `<input type="color">` | `required` (Validates hex color format) |
+| `file` | 📂 | `<input type="file">` | `mimes`, `max_file_size` (Secure storage & URL generation) |
 
 ---
 

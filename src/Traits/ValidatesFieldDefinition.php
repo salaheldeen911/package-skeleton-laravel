@@ -100,7 +100,7 @@ trait ValidatesFieldDefinition
             'name' => [
                 'required',
                 'string',
-                'max:255',
+                'max:50',
                 'regex:/^[\p{L}\p{N}\s]+$/u',
                 Rule::unique('custom_fields', 'name')
                     ->where(fn ($q) => $q->where('model', $this->model))
